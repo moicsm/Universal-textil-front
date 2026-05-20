@@ -274,6 +274,44 @@ function App() {
     );
   };
 
+  const renderTabContent = () => {
+    if (activeTab === 'dashboard') {
+      return renderDashboard();
+    }
+    
+    if (activeTab === 'ventas') {
+      let safeData = Array.isArray(tabData) ? tabData : [tabData];
+      const ventasFiltradas = safeData.filter(v => {
+        if (!v.fecha) return false;
+        const vDateObj = new Date(v.fecha);
+        if (isNaN(vDateObj.getTime())) return false;
+        const vDateStr = new Date(vDateObj.getTime() - (vDateObj.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+        return vDateStr === filterDate;
+      });
+
+      return (
+        <div style={{ animation: 'fadeIn 0.3s ease-in-out' }}>
+          <div className="glass-panel card" style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderTop: '4px solid var(--accent-primary)', marginBottom: '1.5rem' }}>
+            <label className="stat-title" style={{ margin: 0, fontSize: '1.1rem' }}>📅 Filtrar Ventas del Día:</label>
+            <input 
+              type="date" 
+              className="select-modern" 
+              value={filterDate} 
+              onChange={e => {
+                setFilterDate(e.target.value);
+                setCurrentPage(1);
+              }}
+              style={{ padding: '0.6rem', width: 'auto', fontSize: '1rem', fontWeight: 'bold' }}
+            />
+          </div>
+          {renderDataList(ventasFiltradas, 'Ventas')}
+        </div>
+      );
+    }
+    
+    return renderDataList(tabData, activeTab);
+  };
+
   return (
     <>
       <header>
@@ -318,7 +356,7 @@ function App() {
 
       {!loading && !error && tabData && (
         <div style={{ marginTop: '2rem' }}>
-          {activeTab === 'dashboard' ? renderDashboard() : renderDataList(tabData, activeTab)}
+          {renderTabContent()}
         </div>
       )}
     </>
