@@ -23,6 +23,9 @@ function App() {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // UI States
+  const [showVentasDia, setShowVentasDia] = useState(false);
 
   // 1. Obtener Cajas al iniciar
   useEffect(() => {
@@ -192,10 +195,12 @@ function App() {
   const renderDashboard = () => {
     if (!tabData) return null;
 
-    // Filtrar ventas por fecha seleccionada (ajustando a zona horaria local)
+    // Filtrar ventas por fecha seleccionada (ajustando a zona horaria local y protegiendo de fechas corruptas)
     const ventasDelDia = dashboardVentas.filter(v => {
       if (!v.fecha) return false;
       const vDateObj = new Date(v.fecha);
+      if (isNaN(vDateObj.getTime())) return false; // Escudo contra fechas inválidas
+      
       const vDateStr = new Date(vDateObj.getTime() - (vDateObj.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
       return vDateStr === filterDate;
     });
@@ -219,8 +224,15 @@ function App() {
 
         {/* Resumen del Día Seleccionado */}
         <div className="stats-grid">
-          <div className="glass-panel card" style={{ borderTop: '4px solid #3b82f6' }}>
-            <div className="stat-title">Ventas del Día</div>
+          <div 
+            className="glass-panel card" 
+            style={{ borderTop: '4px solid #3b82f6', cursor: 'pointer', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-2px)' } }}
+            onClick={() => {
+              setShowVentasDia(!showVentasDia);
+              setCurrentPage(1); // Reset pagination for the sub-list
+            }}
+          >
+            <div className="stat-title">Ventas del Día <br/><small style={{color:'#60a5fa'}}>(👆 Clic para ver lista)</small></div>
             <div className="stat-value">{ventasDelDia.length}</div>
           </div>
           <div className="glass-panel card" style={{ borderTop: '4px solid #10b981' }}>
@@ -248,6 +260,16 @@ function App() {
             <div className="stat-value money" style={{ fontSize: '1.5rem' }}>${(tabData.resumen?.ingresosTotalesHistoricos || 0).toFixed(2)}</div>
           </div>
         </div>
+
+        {/* Detalle de Ventas del Día Desplegable */}
+        {showVentasDia && (
+          <div style={{ marginTop: '1rem', animation: 'fadeIn 0.3s ease-in-out' }}>
+            <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--surface-border)', paddingBottom: '0.5rem' }}>
+              🧾 Detalle de Ventas ({filterDate})
+            </h3>
+            {renderDataList(ventasDelDia, 'Ventas del Día Seleccionado')}
+          </div>
+        )}
       </div>
     );
   };
